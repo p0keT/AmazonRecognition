@@ -268,14 +268,15 @@ public class VideoDetect {
 
 
             //Show faces, confidence and detection times
-            List<FaceDetectionDva> faces= faceDetectionResult.getFaces();
+            List<FaceDetection> faces= faceDetectionResult.getFaces();
             int j=0;
             for (FaceDetection face: faces) {
                 j++;
                 long seconds=face.getTimestamp()/1000;
                 long time = (face.getTimestamp());
                 System.out.print("Sec: " + Long.toString(seconds) + " ");
-                FaceDetailsDva fdva = (FaceDetailsDva) face.getFace();
+                FaceDetailsDva fdva = new FaceDetailsDva();
+                fdva.copy(face.getFace());
                 System.out.println(fdva.toString());
                 toFile(face.getFace().toString(),j, Long.toString(time));
                 System.out.println();

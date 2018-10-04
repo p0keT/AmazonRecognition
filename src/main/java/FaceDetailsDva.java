@@ -1,12 +1,16 @@
+import com.amazonaws.services.rekognition.model.Emotion;
 import com.amazonaws.services.rekognition.model.FaceDetail;
+import com.amazonaws.services.rekognition.model.Landmark;
+
+import java.util.ArrayList;
 
 /**
  * Created by Laimil on 03.10.2018.
  */
 public class FaceDetailsDva extends FaceDetail{
-    FaceDetailsDva(){
-        super();
-    }
+
+    ArrayList<Emotion> emotions = new ArrayList<>();
+    ArrayList<Landmark> landmarks = new ArrayList<>();
 
     @Override
     public String toString(){
@@ -53,11 +57,11 @@ public class FaceDetailsDva extends FaceDetail{
         }
 
         if(this.getEmotions() != null) {
-            sb.append("Emotions: ").append(((EmotionsDva)this.getEmotions()).toString()).append(",");
+            sb.append("Emotions: ").append((emotions).toString()).append(",");
         }
 
         if(this.getLandmarks() != null) {
-            sb.append("Landmarks: ").append((LandmarksDva)this.getLandmarks()).append(",");
+            sb.append("Landmarks: ").append(landmarks).append(",");
         }
 
         if(this.getPose() != null) {
@@ -74,5 +78,39 @@ public class FaceDetailsDva extends FaceDetail{
 
         sb.append("}");
         return sb.toString();
+    }
+
+    public void copy(FaceDetail fd){
+        super.setAgeRange(fd.getAgeRange());
+        super.setBeard(fd.getBeard());
+        super.setBoundingBox(fd.getBoundingBox());
+        super.setConfidence(fd.getConfidence());
+        super.setEmotions(fd.getEmotions());
+        super.setEyeglasses(fd.getEyeglasses());
+        super.setGender(fd.getGender());
+        super.setLandmarks(fd.getLandmarks());
+        super.setMouthOpen(fd.getMouthOpen());
+        super.setMustache(fd.getMustache());
+        super.setPose(fd.getPose());
+        super.setQuality(fd.getQuality());
+        super.setSmile(fd.getSmile());
+        super.setSunglasses(fd.getSunglasses());
+
+        if(fd.getEmotions()!=null)
+            for(int i=0; i<fd.getEmotions().size(); i++){
+                Emotion emtemp = new EmotionsDva();
+                EmotionsDva dvatemp = (EmotionsDva) emtemp;
+                dvatemp.copy(fd.getEmotions().get(i));
+                emotions.add(dvatemp);
+        }
+
+        if(fd.getLandmarks()!=null)
+            for(int i=0; i<fd.getLandmarks().size(); i++){
+                Landmark dvatempland = new LandmarksDva();
+                LandmarksDva templand = (LandmarksDva)dvatempland;
+                templand.copy(fd.getLandmarks().get(i));
+                landmarks.add(templand);
+            }
+
     }
 }

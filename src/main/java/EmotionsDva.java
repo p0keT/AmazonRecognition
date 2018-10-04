@@ -4,6 +4,10 @@ import com.amazonaws.services.rekognition.model.Emotion;
  * Created by Laimil on 03.10.2018.
  */
 public class EmotionsDva extends Emotion {
+    public void copy(Emotion emotion){
+        super.setConfidence(emotion.getConfidence());
+        super.setType(emotion.getType());
+    }
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

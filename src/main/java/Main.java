@@ -31,7 +31,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        String photo = "input2.jpg";
+        String photo = "input13.jpg";
 
         //Get Rekognition client
         AmazonRekognition amazonRekognition = AmazonRekognitionClientBuilder.defaultClient();
@@ -87,6 +87,7 @@ public class Main {
                         face.getBoundingBox(),
                         result.getOrientationCorrection());
                 AgeRange ageRange = face.getAgeRange();
+                System.out.println(face);
                 System.out.println("The detected face is estimated to be between "
                         + ageRange.getLow().toString() + " and " + ageRange.getHigh().toString()
                         + " years old.");

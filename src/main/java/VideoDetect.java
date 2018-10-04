@@ -75,8 +75,8 @@ public class VideoDetect {
 
         //=================================================
         //StartLabels(bucket, video);
-        //StartPersons(bucket,video);
-        StartFaces(bucket,video);
+        StartPersons(bucket,video);
+        //StartFaces(bucket,video);
 
         //=================================================
         System.out.println("Waiting for job: " + startJobId);
@@ -117,8 +117,8 @@ public class VideoDetect {
                         if (operationStatus.asText().equals("SUCCEEDED")){
                             //============================================
                             //GetResultsLabels();
-                            //GetResultsPersons();
-                            GetResultsFaces();
+                            GetResultsPersons();
+                            //GetResultsFaces();
                             //============================================
                         }
                         else{
@@ -253,9 +253,14 @@ public class VideoDetect {
             for (PersonDetection detectedPerson: detectedPersons) {
 
                 long seconds=detectedPerson.getTimestamp()/1000;
+                System.out.println("========================================");
                 System.out.print("Sec: " + Long.toString(seconds) + " ");
-                System.out.println("Person Identifier: "  + detectedPerson.getPerson().getFace().getGender().getValue());
-                System.out.println("Person Identifier: "  + detectedPerson.getPerson().getBoundingBox());
+                if(detectedPerson.getPerson().getFace()!=null)
+                System.out.println("Person Identifier: "  + detectedPerson.getPerson().getFace().toString());
+                System.out.println(": "  + detectedPerson.getPerson().getBoundingBox());
+                System.out.println(": "  + detectedPerson.getPerson());
+                System.out.println("========================================");
+
                 System.out.println();
             }
         }  while (personTrackingResult !=null && personTrackingResult.getNextToken() != null);
@@ -280,7 +285,7 @@ public class VideoDetect {
 
     private static void GetResultsFaces() throws Exception{
 
-        int maxResults=10;
+        int maxResults=100;
         String paginationToken=null;
         GetFaceDetectionResult faceDetectionResult=null;
 

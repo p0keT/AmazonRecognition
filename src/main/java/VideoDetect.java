@@ -278,7 +278,7 @@ public class VideoDetect {
                 FaceDetailsDva fdva = new FaceDetailsDva();
                 fdva.copy(face.getFace());
                 System.out.println(fdva.toString());
-                toFile(face.getFace().toString(),j, Long.toString(time));
+                toFile(fdva.toString(),j, Long.toString(time));
                 System.out.println();
             }
         } while (faceDetectionResult !=null && faceDetectionResult.getNextToken() != null);
@@ -288,15 +288,14 @@ public class VideoDetect {
     private static void toFile(String context, Integer index, String time) throws FileNotFoundException, UnsupportedEncodingException {
         String Path = "";
         String timeJson = "TimeStamp: "+time+",BoundingBox";
-        context=context.replace("eyeLeft","\'eyeLeft\'");
-        context=context.replace("eyeRight","\'eyeRight\'");
-        context=context.replace("nose","\'nose\'");
-        context=context.replace("mouthLeft","\'mouthLeft\'");
-        context=context.replace("mouthRight","\'mouthRight\'");
+//        context=context.replace("eyeLeft","\'eyeLeft\'");
+//        context=context.replace("eyeRight","\'eyeRight\'");
+//        context=context.replace("nose","\'nose\'");
+//        context=context.replace("mouthLeft","\'mouthLeft\'");
+//        context=context.replace("mouthRight","\'mouthRight\'");
         context=context.replace("BoundingBox",timeJson);
         PrintWriter writer = new PrintWriter(index+".json","UTF-8");
         writer.println(context);
-        System.out.println(context);
         writer.close();
     }
 }

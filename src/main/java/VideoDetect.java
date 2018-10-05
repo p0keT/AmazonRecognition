@@ -1,52 +1,15 @@
 import com.amazonaws.services.rekognition.AmazonRekognition;
 import com.amazonaws.services.rekognition.AmazonRekognitionClientBuilder;
-import com.amazonaws.services.rekognition.model.CelebrityDetail;
-import com.amazonaws.services.rekognition.model.CelebrityRecognition;
-import com.amazonaws.services.rekognition.model.CelebrityRecognitionSortBy;
-import com.amazonaws.services.rekognition.model.ContentModerationDetection;
-import com.amazonaws.services.rekognition.model.ContentModerationSortBy;
-import com.amazonaws.services.rekognition.model.Face;
-import com.amazonaws.services.rekognition.model.FaceDetection;
-import com.amazonaws.services.rekognition.model.FaceMatch;
-import com.amazonaws.services.rekognition.model.FaceSearchSortBy;
-import com.amazonaws.services.rekognition.model.GetCelebrityRecognitionRequest;
-import com.amazonaws.services.rekognition.model.GetCelebrityRecognitionResult;
-import com.amazonaws.services.rekognition.model.GetContentModerationRequest;
-import com.amazonaws.services.rekognition.model.GetContentModerationResult;
-import com.amazonaws.services.rekognition.model.GetFaceDetectionRequest;
-import com.amazonaws.services.rekognition.model.GetFaceDetectionResult;
-import com.amazonaws.services.rekognition.model.GetFaceSearchRequest;
-import com.amazonaws.services.rekognition.model.GetFaceSearchResult;
-import com.amazonaws.services.rekognition.model.GetLabelDetectionRequest;
-import com.amazonaws.services.rekognition.model.GetLabelDetectionResult;
-import com.amazonaws.services.rekognition.model.GetPersonTrackingRequest;
-import com.amazonaws.services.rekognition.model.GetPersonTrackingResult;
-import com.amazonaws.services.rekognition.model.LabelDetection;
-import com.amazonaws.services.rekognition.model.LabelDetectionSortBy;
-import com.amazonaws.services.rekognition.model.NotificationChannel;
-import com.amazonaws.services.rekognition.model.PersonDetection;
-import com.amazonaws.services.rekognition.model.PersonMatch;
-import com.amazonaws.services.rekognition.model.PersonTrackingSortBy;
-import com.amazonaws.services.rekognition.model.S3Object;
-import com.amazonaws.services.rekognition.model.StartCelebrityRecognitionRequest;
-import com.amazonaws.services.rekognition.model.StartCelebrityRecognitionResult;
-import com.amazonaws.services.rekognition.model.StartContentModerationRequest;
-import com.amazonaws.services.rekognition.model.StartContentModerationResult;
-import com.amazonaws.services.rekognition.model.StartFaceDetectionRequest;
-import com.amazonaws.services.rekognition.model.StartFaceDetectionResult;
-import com.amazonaws.services.rekognition.model.StartFaceSearchRequest;
-import com.amazonaws.services.rekognition.model.StartFaceSearchResult;
-import com.amazonaws.services.rekognition.model.StartLabelDetectionRequest;
-import com.amazonaws.services.rekognition.model.StartLabelDetectionResult;
-import com.amazonaws.services.rekognition.model.StartPersonTrackingRequest;
-import com.amazonaws.services.rekognition.model.StartPersonTrackingResult;
-import com.amazonaws.services.rekognition.model.Video;
-import com.amazonaws.services.rekognition.model.VideoMetadata;
+import com.amazonaws.services.rekognition.model.*;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.Message;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 public class VideoDetect {
@@ -311,15 +274,33 @@ public class VideoDetect {
 
             //Show faces, confidence and detection times
             List<FaceDetection> faces= faceDetectionResult.getFaces();
-
+            int j=0;
             for (FaceDetection face: faces) {
+                j++;
                 long seconds=face.getTimestamp()/1000;
+                long time = (face.getTimestamp());
                 System.out.print("Sec: " + Long.toString(seconds) + " ");
-                System.out.println(face.getFace().toString());
+                FaceDetailsDva fdva = new FaceDetailsDva();
+                fdva.copy(face.getFace());
+                System.out.println(fdva.toString());
+                toFile(fdva.toString(),j, Long.toString(time));
                 System.out.println();
             }
         } while (faceDetectionResult !=null && faceDetectionResult.getNextToken() != null);
+    }
 
 
+    private static void toFile(String context, Integer index, String time) throws FileNotFoundException, UnsupportedEncodingException {
+        String Path = "";
+        String timeJson = "TimeStamp: "+time+",BoundingBox";
+//        context=context.replace("eyeLeft","\'eyeLeft\'");
+//        context=context.replace("eyeRight","\'eyeRight\'");
+//        context=context.replace("nose","\'nose\'");
+//        context=context.replace("mouthLeft","\'mouthLeft\'");
+//        context=context.replace("mouthRight","\'mouthRight\'");
+        context=context.replace("BoundingBox",timeJson);
+        PrintWriter writer = new PrintWriter(index+".json","UTF-8");
+        writer.println(context);
+        writer.close();
     }
 }

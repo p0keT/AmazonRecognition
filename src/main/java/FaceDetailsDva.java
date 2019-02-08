@@ -80,7 +80,7 @@ public class FaceDetailsDva extends FaceDetail{
         return sb.toString();
     }
 
-    public void copy(FaceDetail fd){
+    public void copy(FaceDetail fd) throws NullPointerException{
         super.setAgeRange(fd.getAgeRange());
         super.setBeard(fd.getBeard());
         super.setBoundingBox(fd.getBoundingBox());

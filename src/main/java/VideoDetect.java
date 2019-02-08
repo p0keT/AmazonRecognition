@@ -11,16 +11,25 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class VideoDetect {
     public static int i=0;
+    public static int j = 0;
     private static String bucket = "newvision";
-    private static String video = "RomaForTest.mp4";
+    private static String video = "office3.mp4";
     private static String queueUrl =  "https://sqs.eu-west-1.amazonaws.com/717509710948/newvision";
     private static String topicArn="arn:aws:sns:eu-west-1:717509710948:AmazonRekognitionNewVision";
     private static String roleArn="arn:aws:iam::717509710948:role/Rekognition";
     private static AmazonSQS sqs = null;
     private static AmazonRekognition rek = null;
+    public static ArrayList<String> people = new ArrayList<>();
+    public static ArrayList<Integer> timestampForPeople = new ArrayList<>();
+    public static ArrayList<String> jsonFrames = new ArrayList<>();
+    //:TODO фреймрейт і довжину відео можна витягнути з сдк, треба це зробити
+    private static int frameRate = 30;
+    private static int duration = 25659;
 
     private static NotificationChannel channel= new NotificationChannel()
             .withSNSTopicArn(topicArn)
@@ -100,7 +109,16 @@ public class VideoDetect {
             }
         } while (!jobFound);
 
+        long numberOfAllFrames = duration/1000*frameRate;
+        long oneFrameTime = duration/numberOfAllFrames;
+        long begin = 0;
+        long end = oneFrameTime;
 
+        for (int k = 0; k <numberOfAllFrames ; k++) {
+            toJsonFrame(begin,end,k);
+            begin+=oneFrameTime;
+            end+=oneFrameTime;
+        }
         System.out.println("Done!");
     }
 
@@ -214,16 +232,24 @@ public class VideoDetect {
             List<PersonDetection> detectedPersons= personTrackingResult.getPersons();
 
             for (PersonDetection detectedPerson: detectedPersons) {
-
+                j++;
                 long seconds=detectedPerson.getTimestamp()/1000;
                 System.out.println("========================================");
                 System.out.print("Sec: " + Long.toString(seconds) + " ");
                 if(detectedPerson.getPerson().getFace()!=null)
                 System.out.println("Person Identifier: "  + detectedPerson.getPerson().getFace().toString());
                 System.out.println(": "  + detectedPerson.getPerson().getBoundingBox());
-                System.out.println(": "  + detectedPerson.getPerson());
+                System.out.println(": "  + detectedPerson.getPerson().toString());
                 System.out.println("========================================");
 
+                String contextBody = "{Index: "+detectedPerson.getPerson().getIndex()+", BoundingBox: "+detectedPerson.getPerson().getBoundingBox()+"}";
+                FaceDetailsDva fdva = new FaceDetailsDva();
+                try {
+                    fdva.copy(detectedPerson.getPerson().getFace());
+                }catch (NullPointerException e){
+                    System.out.println("No faces found");
+                }
+                toJsonList(contextBody,fdva.toString(),j,detectedPerson.getTimestamp().toString());
                 System.out.println();
             }
         }  while (personTrackingResult !=null && personTrackingResult.getNextToken() != null);
@@ -248,7 +274,7 @@ public class VideoDetect {
 
     private static void GetResultsFaces() throws Exception{
 
-        int maxResults=100;
+        int maxResults=1000;
         String paginationToken=null;
         GetFaceDetectionResult faceDetectionResult=null;
 
@@ -283,24 +309,88 @@ public class VideoDetect {
                 FaceDetailsDva fdva = new FaceDetailsDva();
                 fdva.copy(face.getFace());
                 System.out.println(fdva.toString());
-                toFile(fdva.toString(),j, Long.toString(time));
+                toJsonList("", fdva.toString(),j, Long.toString(time));
                 System.out.println();
             }
         } while (faceDetectionResult !=null && faceDetectionResult.getNextToken() != null);
     }
 
 
-    private static void toFile(String context, Integer index, String time) throws FileNotFoundException, UnsupportedEncodingException {
-        String Path = "";
-        String timeJson = "TimeStamp: "+time+",BoundingBox";
-//        context=context.replace("eyeLeft","\'eyeLeft\'");
-//        context=context.replace("eyeRight","\'eyeRight\'");
-//        context=context.replace("nose","\'nose\'");
-//        context=context.replace("mouthLeft","\'mouthLeft\'");
-//        context=context.replace("mouthRight","\'mouthRight\'");
-        context=context.replace("BoundingBox",timeJson);
-        PrintWriter writer = new PrintWriter(index+".json","UTF-8");
-        writer.println(context);
+    static String contextFinal = "";
+    private static void toJsonList(String contextBody, String contextFace, Integer index, String time) throws FileNotFoundException, UnsupportedEncodingException {
+        String contextInfo = "Info: {TimeStamp: "+time+"}";
+        timestampForPeople.add(Integer.valueOf(time));
+        contextBody = "Body: "+contextBody+"";
+        contextFace = "Face: "+contextFace+"";
+
+
+        if(contextBody==""||contextBody==null)
+        {
+            contextFinal  = "{"+contextInfo+", "+contextFace+"}";
+        }else{
+            if(contextFace==""||contextFace==null){
+                contextFinal  = "{"+contextInfo+", "+contextBody+"}";
+            }else{
+                contextFinal  = "{"+contextInfo+", "+contextBody+", "+contextFace+"}";
+            }
+        }
+        people.add(contextFinal);
+//        PrintWriter writer = new PrintWriter(index+".json","UTF-8");
+//        writer.println(contextFinal);
+//        writer.close();
+
+    }
+    private static void toJsonFrame(long begin, long end, int frameNumber){
+        String jsonToSave = "{frame: "+frameNumber+", people: [";
+        for (int k = 0; k < people.size(); k++) {
+            if(timestampForPeople.get(k)>=begin && timestampForPeople.get(k)<end){
+                jsonToSave+=(people.get(k)+", ");
+            }
+        }
+        if(','==(jsonToSave.charAt(jsonToSave.length()-2))){
+            jsonToSave=jsonToSave.substring(0,jsonToSave.length()-2);
+        }
+        jsonToSave+="]}";
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter("jsons\\"+frameNumber+".json","UTF-8");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        jsonToSave=quotesAdding(jsonToSave);
+        writer.println(jsonToSave);
         writer.close();
+    }
+
+    private static String quotesAdding(String str){
+        str=str.replace("\'","");
+        for (int i = 1; i <str.length()-1 ; i++) {
+            StringBuffer buff = new StringBuffer(str);
+            Pattern p2 = Pattern.compile("[a-zA-Z]");
+            Matcher m1 = p2.matcher(String.valueOf(str.charAt(i)));
+            Matcher m2 = p2.matcher(String.valueOf(str.charAt(i-1)));
+            Matcher m3 = p2.matcher(String.valueOf(str.charAt(i+1)));
+            if(m1.find()==true && m2.find()==false && str.charAt(i-1)!='\"'){
+                buff.insert(i,"\"");
+                str= String.valueOf(buff);
+            }
+
+        }
+        for (int i = 1; i <str.length()-1 ; i++) {
+            StringBuffer buff = new StringBuffer(str);
+            Pattern p2 = Pattern.compile("[a-zA-Z]");
+            Matcher m1 = p2.matcher(String.valueOf(str.charAt(i)));
+            Matcher m2 = p2.matcher(String.valueOf(str.charAt(i-1)));
+            Matcher m3 = p2.matcher(String.valueOf(str.charAt(i+1)));
+
+            if(m1.find()==true && m3.find()==false && str.charAt(i+1)!='\"'){
+                buff.insert(i+1,"\"");
+                str= String.valueOf(buff);
+            }
+        }
+        return str;
     }
 }

@@ -7,6 +7,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -16,7 +17,7 @@ public class DetectText {
     public static void main(String[] args) throws Exception {
 
 
-        String photo = "input10.jpg";
+        String photo = "Joined_97_15421846834059_Price.jpg";
         String bucket = "bucket";
 
         AmazonRekognition rekognitionClient = AmazonRekognitionClientBuilder.defaultClient();
@@ -58,19 +59,82 @@ public class DetectText {
 
 
         try {
+            String price = "0.0";
             DetectTextResult result = rekognitionClient.detectText(request);
             List<TextDetection> textDetections = result.getTextDetections();
-
-            System.out.println("Detected lines and words for " + photo);
-            for (TextDetection text: textDetections) {
-
-                System.out.println("Detected: " + text.getDetectedText());
-                System.out.println("Confidence: " + text.getConfidence().toString());
-                System.out.println("Id : " + text.getId());
-                System.out.println("Parent Id: " + text.getParentId());
-                System.out.println("Type: " + text.getType());
-                System.out.println();
+            Iterator<TextDetection> iter = textDetections.iterator();
+            while (iter.hasNext()) {
+                TextDetection td = iter.next();
+                System.out.println(td.getDetectedText());
+                td.setDetectedText(td.getDetectedText().replaceAll("[^0-9]",""));
+                if (
+                        !(td.getParentId()==null &&
+                        td.getDetectedText().matches("[0-9]+")&&
+                        td.getGeometry().getBoundingBox().getHeight()>0.05)
+                        //td.getConfidence()<99.0
+                        ) {
+                    iter.remove();
+                }
             }
+            Iterator<TextDetection> iter2 = textDetections.iterator();
+            while (iter2.hasNext()) {
+                TextDetection td = iter2.next();
+                if(td.getConfidence()>95.0)
+                System.out.println(td.getDetectedText()+"----"+td.getConfidence());
+            }
+
+            if(textDetections.size()==1){
+                if(textDetections.get(0).getDetectedText().length()>2){
+                    StringBuilder detText = new StringBuilder(textDetections.get(0).getDetectedText());
+                    detText.insert(detText.length()-2,'.');
+                    price = detText.toString();
+                }else{
+                    price = textDetections.get(0).getDetectedText();
+                }
+            }else {
+
+
+                /*
+                 * По очереди будем просматривать все подмножества элементов массива (0 -
+                 * последний, 1-последний, 2-последний,...)
+                 */
+                for (int i = 0; i < textDetections.size(); i++) {
+                    /*
+                     * Предполагаем, что первый элемент (в каждом подмножестве элементов)
+                     * является минимальным
+                     */
+                    TextDetection min = textDetections.get(i);
+                    int min_i = i;
+                    /*
+                     * В оставшейся части подмножества ищем элемент, который меньше
+                     * предположенного минимума
+                     */
+                    for (int j = i + 1; j < textDetections.size(); j++) {
+                        // Если находим, запоминаем его индекс
+                        if (textDetections.get(j).getGeometry().getBoundingBox().getHeight() <
+                                min.getGeometry().getBoundingBox().getHeight()) {
+                            min = textDetections.get(j);
+                            min_i = j;
+                        }
+                    }
+                    /*
+                     * Если нашелся элемент, меньший, чем на текущей позиции, меняем их
+                     * местами
+                     */
+                    if (i != min_i) {
+                        TextDetection tmp = textDetections.get(i);
+                        textDetections.set(i, textDetections.get(min_i));
+                        textDetections.set(min_i, tmp);
+                    }
+                }
+
+                price = textDetections.get(textDetections.size() - 1).getDetectedText() +
+                        "." +
+                        textDetections.get(textDetections.size() - 2).getDetectedText();
+            }
+            System.out.println("\nPrice: " + Double.valueOf(price));
+
+
         } catch(AmazonRekognitionException e) {
             e.printStackTrace();
         }

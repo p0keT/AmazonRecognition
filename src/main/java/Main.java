@@ -29,9 +29,9 @@ public class Main {
     public static ArrayList<Integer> widthR = new ArrayList<>();
     public static int k=0;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String...args) throws Exception {
 
-        String photo = "input13.jpg";
+        String photo = "jul.jpg";
 
         //Get Rekognition client
         AmazonRekognition amazonRekognition = AmazonRekognitionClientBuilder.defaultClient();
@@ -174,7 +174,7 @@ public class Main {
             // Получаем изображения.
             try
             {
-                image = ImageIO.read(new File("input2.jpg"));
+                image = ImageIO.read(new File("jul.jpg"));
             }
             catch(IOException e)
             {
